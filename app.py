@@ -7,14 +7,25 @@ import sanic.request
 import peewee
 import peewee_async
 import random
+from sanic_redis import SanicRedis
 from passlib.hash import bcrypt_sha256
+
 
 app = Sanic('oauth')
 
 pg_db = peewee_async.PostgresqlDatabase('app', user='app-user', password='password',
-                                        host='127.0.0.1', port=5433)
+                                        host='127.0.0.1', port=5432)
 
-db = peewee_async.Manager(pg_db)
+app.config.update({
+        'REDIS': {
+            'address': ('127.0.0.1', 6379),
+            'minsize': 1,
+            'maxsize': 10
+        }
+    })
+redis = SanicRedis(app)
+
+pg = peewee_async.Manager(pg_db)
 
 
 class BaseModel(peewee.Model):
@@ -53,17 +64,16 @@ def hash_password(password):
 
 
 async def verify_password(username, h):
-    user = await db.get(User, username=username)
+    user = await pg.get(User, username=username)
     password = user.password
-    logger.debug('password %s', password)
-    return password == h
+    return password == h, user.id
 
 
 @app.route("/oauth/token", methods=['POST'])
 async def grant_token(request: sanic.request.Request):
     # TODO connect user db (postgresql)
     # TODO connect token store (redis)
-    async def _password():
+    async def _password_auth():
         logger.info('PASSWORD grant.')
         username = request.form.get('username')
         password_raw = request.form.get('password')
@@ -71,28 +81,36 @@ async def grant_token(request: sanic.request.Request):
         return await verify_password(username, password_hashed)
 
     job_chooser = {
-        'password': _password
+        'password': _password_auth
     }
 
     if 'grant_type' in request.form:
-        auth_success = await job_chooser[request.form.get('grant_type')]()
+        auth_success, user_id = await job_chooser[request.form.get('grant_type')]()
         if auth_success:
+            access_token = nonce_gen(64)
+            refresh_token = nonce_gen(128)
+            with await redis.conn as r:
+                await r.set(str(user_id) + '.at', access_token)
+                await r.set(str(user_id) + '.rt', refresh_token)
+
             return json(
                 dict(
-                    access_token='aaaaa',
-                    token_type='bearer',
+                    access_token=access_token,
+                    token_type='Bearer',
                     expires_in=3600,
-                    refresh_token='bbb'
+                    refresh_token=refresh_token
                 ),
                 headers={
                     'Cache-Control': 'no-store',
                     'Pragma': 'no-cache'
                 })
+
     raise Unauthorized("username and password don't match")
 
 
-@app.route('/user/register', methods=['POST'])
+@app.route('/user', methods=['POST'])
 async def user_handler(request: sanic.request.Request):
+
     username = request.form.get('username')
     password = request.form.get('password')
     confirm = request.form.get('confirm')

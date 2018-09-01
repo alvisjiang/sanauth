@@ -1,6 +1,6 @@
 # sanic-oauth2
 > An oauth2 server implementation with [sanic](https://github.com/channelcat/sanic).
-> The development uses <https://www.oauth.com/> as a guideline to ensure that all the API's stick to the protocol.
+> The development sees <https://www.oauth.com/> as a guideline to ensure that all the API's stick to the protocol.
 
 
 ## Tasks
@@ -20,14 +20,17 @@
 
 >I will be doing introspection for token verification.
 
-* access token generation
+* access token generation ✔️
 
     *a very long nonce string shall be sufficient.*
  
  
 * handlers for grant types
-    * password
+    * password ✔️
     * client credentials
     * authorization code
     * implicit
     * refresh token
+    
+ 
+* token introspection
