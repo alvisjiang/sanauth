@@ -14,8 +14,6 @@ def setup_token_handlers(app: Sanic):
 
     @app.route("/oauth/token", methods=['POST'])
     async def grant_token(request: Request):
-        # TODO connect user db (postgresql)
-        # TODO connect token store (redis)
         async def _password_auth():
             username = request.form.get('username')
             password = request.form.get('password')
@@ -28,7 +26,8 @@ def setup_token_handlers(app: Sanic):
         }
 
         if 'grant_type' in request.form:
-            auth_success, user = await job_chooser[request.form.get('grant_type')]()
+            grant_type = request.form.get('grant_type')
+            auth_success, user = await job_chooser[grant_type]()
             if auth_success:
                 access_token = nonce_gen(64)
                 refresh_token = nonce_gen(128)
@@ -40,7 +39,6 @@ def setup_token_handlers(app: Sanic):
                     await r.set(
                         access_token,
                         dumps(dict(
-                            client_id=str(user.id),
                             username=user.username,
                             exp=now + token_lifespan
                         )))
@@ -70,8 +68,17 @@ def setup_token_handlers(app: Sanic):
     async def introspection_handler(req: Request):
         if 'token' not in req.form:
             abort(400, 'missing parameter "token"')
-
         with await app.redis as r:
             token_info = await r.get(req.form.get('token'))
-            return json(loads(token_info))
+
+            if token_info is None:
+                return json({'active': False})
+
+            token_info = loads(token_info)
+            now = time()
+            if int(token_info['exp']) < now:
+                return json({'active': False})
+
+            token_info.update(active=True)
+            return json(token_info)
 
