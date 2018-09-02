@@ -6,11 +6,14 @@ import user_handlers
 
 app = Sanic('oauth')
 
-app.pg = setup_pg('app',
-                  user='app-user',
-                  password='password',
-                  host='127.0.0.1',
-                  port=5432)
+app.pg = setup_pg(
+    app,
+    'app',
+    user='app-user',
+    password='password',
+    host='127.0.0.1',
+    port=5432
+)
 
 app.config.update({
     'REDIS': {
@@ -23,7 +26,6 @@ app.config.update({
 SanicRedis(app)
 
 token_handlers.setup_token_handlers(app)
-
 user_handlers.setup_user_handler(app)
 
 

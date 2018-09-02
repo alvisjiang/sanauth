@@ -18,18 +18,16 @@ class User(BaseModel):
 
 
 class RefreshToken(BaseModel):
-    user_id = peewee.ForeignKeyField(User)
+    user_id = peewee.UUIDField(primary_key=True)
     token = peewee.CharField(128)
 
 
-pg_async = None
-
-
-def setup_pg(database, **settings):
+def setup_pg(app, database, **settings):
     pg_db = peewee_async.PostgresqlDatabase(database, **settings)
     BaseModel.set_database(pg_db)
     User.create_table()
     RefreshToken.create_table()
     pg_db.set_allow_sync(False)
+    app.pg = peewee_async.Manager(pg_db)
 
-    return peewee_async.Manager(pg_db)
+    return app.pg

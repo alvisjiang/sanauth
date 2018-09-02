@@ -1,6 +1,6 @@
 
 from json import loads, dumps
-# from sanic import Sanic
+from sanic import Sanic
 from sanic.request import Request
 from sanic.response import json
 from sanic.log import logger
@@ -10,7 +10,7 @@ from time import time
 from security import *
 
 
-def setup_token_handlers(app):
+def setup_token_handlers(app: Sanic):
 
     @app.route("/oauth/token", methods=['POST'])
     async def grant_token(request: Request):
@@ -18,12 +18,10 @@ def setup_token_handlers(app):
         # TODO connect token store (redis)
         async def _password_auth():
             username = request.form.get('username')
-            password_raw = request.form.get('password')
-            password_hashed = hash_password(password_raw)
+            password = request.form.get('password')
             logger.info('PASSWORD grant for %s.' % username)
             user = await app.pg.get(User, username=username)
-            password = user.password
-            return password == password_hashed, user
+            return verify_password(password, user.password), user
 
         job_chooser = {
             'password': _password_auth
@@ -38,7 +36,7 @@ def setup_token_handlers(app):
                 token_lifespan = 3600
                 with await app.redis as r:
                     while await r.get(access_token) is not None:
-                        access_token = nonce_gen(64)
+                        access_token = nonce_gen()
                     await r.set(
                         access_token,
                         dumps(dict(
@@ -46,15 +44,13 @@ def setup_token_handlers(app):
                             username=user.username,
                             exp=now + token_lifespan
                         )))
-
-                    rt, created = await app.pg.create_or_get(
+                    (rt, created) = await app.pg.create_or_get(
                         RefreshToken,
                         user_id=user.id,
                         token=refresh_token
                     )
-
                     if not created:
-                        await app.pg.update(rt)
+                        await app.pg.update(rt, only=['token'])
 
                 return json(
                     dict(
@@ -78,3 +74,4 @@ def setup_token_handlers(app):
         with await app.redis as r:
             token_info = await r.get(req.form.get('token'))
             return json(loads(token_info))
+
