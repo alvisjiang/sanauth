@@ -30,7 +30,7 @@
     * client credentials
     * authorization code
     * implicit
-    * refresh token
+    * refresh token ✔️
     
  
 * token introspection ✔️

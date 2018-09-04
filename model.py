@@ -2,6 +2,7 @@ import peewee
 import peewee_async
 import uuid
 import types
+from datetime import datetime
 
 
 class BaseModel(peewee.Model):
@@ -19,8 +20,16 @@ class User(BaseModel):
 
 
 class RefreshToken(BaseModel):
+
+    class Status:
+        Active = 'active'
+        Expired = 'expired'
+        Revoked = 'revoked'
+
     user_id = peewee.UUIDField(primary_key=True)
-    token = peewee.CharField(128)
+    token = peewee.CharField(128, unique=True)
+    time_created = peewee.DateTimeField(default=datetime.utcnow())
+    status = peewee.CharField(default=Status.Active)
 
 
 async def _get_or_none(self, model, *args, **kwargs):

@@ -1,4 +1,4 @@
-import random
+import secrets
 from threaded_execution import make_async
 from passlib.context import CryptContext
 
@@ -8,11 +8,10 @@ pwd_context = CryptContext(schemes=["bcrypt"])
 def nonce_gen(length=64):
     chars = '1234567890' \
             'qwertyuiopasdfghjklzxcvbnm' \
-            'QWERTYUIOPASDFGHJKLZXCVBNM' \
-            '.\\'
+            'QWERTYUIOPASDFGHJKLZXCVBNM'
     nonce = ''
     for _ in range(length):
-        nonce += random.choice(chars)
+        nonce += secrets.choice(chars)
     return nonce
 
 

@@ -6,7 +6,7 @@ from sanic.response import json
 from sanic.log import logger
 from sanic.exceptions import Unauthorized, abort
 from model import User, RefreshToken
-from time import time
+from datetime import datetime
 from security import *
 
 
@@ -14,15 +14,29 @@ def setup_token_handlers(app: Sanic):
 
     @app.route("/oauth/token", methods=['POST'])
     async def grant_token(request: Request):
+
         async def _password_auth():
             username = request.form.get('username')
             password = request.form.get('password')
             logger.info('PASSWORD grant for %s.' % username)
             user = await app.pg.get(User, username=username)
-            return await verify_password(password, user.password), user
+            pwd_verified = await verify_password(password, user.password)
+            return pwd_verified, user
+
+        async def _refresh_token_auth():
+            token_str = request.form.get('refresh_token')
+            found_token = await app.pg.get_or_none(RefreshToken, token=token_str)
+            if found_token is None:
+                raise Unauthorized("invalid refresh token")
+            if found_token.status != RefreshToken.Status.Active:
+                raise Unauthorized('token is %s' % found_token.status)
+
+            user = await app.pg.get(User, id=found_token.user_id)
+            return True, user
 
         job_chooser = {
-            'password': _password_auth
+            'password': _password_auth,
+            'refresh_token': _refresh_token_auth
         }
 
         if 'grant_type' in request.form:
@@ -31,24 +45,35 @@ def setup_token_handlers(app: Sanic):
             if auth_success:
                 access_token = nonce_gen(64)
                 refresh_token = nonce_gen(128)
-                now = int(time())
-                token_lifespan = 3600
+                now = datetime.now()
+                token_lifespan = 1800
+
                 with await app.redis as r:
                     while await r.get(access_token) is not None:
                         access_token = nonce_gen()
-                    await r.set(
+                    await r.setex(
                         access_token,
+                        token_lifespan,
                         dumps(dict(
                             username=user.username,
-                            exp=now + token_lifespan
+                            exp=int(now.strftime('%s')) + token_lifespan
                         )))
-                    (rt, created) = await app.pg.create_or_get(
-                        RefreshToken,
-                        user_id=user.id,
-                        token=refresh_token
-                    )
-                    if not created:
-                        await app.pg.update(rt, only=['token'])
+
+                rt = await app.pg.get_or_none(
+                    RefreshToken,
+                    user_id=user.id
+                )
+
+                if rt is None:
+                    await app.pg.create(RefreshToken,
+                                        token=refresh_token,
+                                        time_created=now,
+                                        status=RefreshToken.Status.Active)
+                else:
+                    rt.token = refresh_token
+                    rt.time_created = now
+                    rt.status = RefreshToken.Status.Active
+                    await app.pg.update(rt)
 
                 return json(
                     dict(
