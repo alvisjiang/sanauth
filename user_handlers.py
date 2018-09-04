@@ -16,12 +16,17 @@ def setup_user_handler(app: Sanic):
         confirm = request.form.get('confirm')
         if password != confirm:
             abort(400, "passwords don't match.")
-        user, created = await app.pg.create_or_get(
+        user = await app.pg.get_or_none(
             User,
-            username=username,
-            password=hash_password(password)
+            username=username
         )
-        if created:
+        if user is None:
+            hashed_password = await hash_password(password)
+            user = await app.pg.create(
+                User,
+                username=username,
+                password=hashed_password
+            )
             return text(
                 'ok',
                 status=201,

@@ -23,6 +23,7 @@ app.config.update({
     }
 })
 
+
 SanicRedis(app)
 
 token_handlers.setup_token_handlers(app)

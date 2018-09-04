@@ -19,7 +19,7 @@ def setup_token_handlers(app: Sanic):
             password = request.form.get('password')
             logger.info('PASSWORD grant for %s.' % username)
             user = await app.pg.get(User, username=username)
-            return verify_password(password, user.password), user
+            return await verify_password(password, user.password), user
 
         job_chooser = {
             'password': _password_auth
