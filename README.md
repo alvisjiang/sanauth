@@ -7,9 +7,7 @@
 > job break down for the server. they are not listed in order.
 
 ### application registration
-
->TBD
-
+* API ✔️
 
 ### user registration API's
 
