@@ -11,6 +11,7 @@ class BaseModel(peewee.Model):
         cls._meta.database = db
         for subclass in cls.__subclasses__():
             subclass.set_database(db)
+            subclass.create_table()
 
 
 class User(BaseModel):
@@ -32,6 +33,13 @@ class RefreshToken(BaseModel):
     status = peewee.CharField(default=Status.Active)
 
 
+class Application(BaseModel):
+
+    client_id = peewee.UUIDField(default=uuid.uuid4(), primary_key=True)
+    client_secret = peewee.CharField()
+    app_name = peewee.CharField()
+
+
 async def _get_or_none(self, model, *args, **kwargs):
     try:
         return await self.get(model, *args, **kwargs)
@@ -42,8 +50,6 @@ async def _get_or_none(self, model, *args, **kwargs):
 def setup_pg(app, database, **settings):
     pg_db = peewee_async.PostgresqlDatabase(database, **settings)
     BaseModel.set_database(pg_db)
-    User.create_table()
-    RefreshToken.create_table()
     pg_db.set_allow_sync(False)
     app.pg = peewee_async.Manager(pg_db)
     app.pg.get_or_none = types.MethodType(_get_or_none, app.pg)

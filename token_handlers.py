@@ -6,6 +6,7 @@ from sanic.response import json
 from sanic.log import logger
 from sanic.exceptions import Unauthorized, abort
 from model import User, RefreshToken
+from time import time
 from datetime import datetime
 from security import *
 

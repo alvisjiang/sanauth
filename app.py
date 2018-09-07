@@ -3,6 +3,7 @@ from sanic_redis import SanicRedis
 from model import setup_pg
 import token_handlers
 import user_handlers
+import application_handlers
 
 app = Sanic('oauth')
 
@@ -28,7 +29,7 @@ SanicRedis(app)
 
 token_handlers.setup_token_handlers(app)
 user_handlers.setup_user_handler(app)
-
+application_handlers.setup(app)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
