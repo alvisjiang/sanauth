@@ -4,11 +4,40 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.response import json
 from sanic.log import logger
-from sanic.exceptions import Unauthorized, abort
-from model import User, RefreshToken
+from sanic.exceptions import SanicException, InvalidUsage
+from model import User, RefreshToken, Application
 from time import time
 from datetime import datetime
 from security import *
+
+
+class TokenRequestError:
+    INVALID_REQUEST = 'invalid_request'
+    INVALID_CLIENT = 'invalid_client'
+    INVALID_GRANT = 'invalid_grant'
+    INVALID_SCOPE = 'invalid_scope'
+    UNAUTHORIZED_CLIENT = 'unauthorized_client'
+    UNSUPPORTED_GRANT_TYPE = 'unsupported_grant_type'
+
+
+class UnsuccessfulTokenRequest(SanicException):
+
+    def __init__(self, error: TokenRequestError, error_description='', status_code=400):
+        if error == TokenRequestError.INVALID_CLIENT:
+            status_code = 401
+
+        msg_dict = dict(
+            error=error,
+            error_description=error_description
+        )
+
+        super().__init__(dumps(msg_dict), status_code)
+
+        self.headers = {
+            'Content-Type': 'application/json;charset=UTF-8',
+            'Cache-Control': 'no-store',
+            'Pragma': 'no-cache'
+        }
 
 
 def setup_token_handlers(app: Sanic):
@@ -16,49 +45,81 @@ def setup_token_handlers(app: Sanic):
     @app.route("/oauth/token", methods=['POST'])
     async def grant_token(request: Request):
 
+        def get_param(key):
+            try:
+                return request.form[key][0]
+            except KeyError:
+                raise UnsuccessfulTokenRequest(TokenRequestError.INVALID_REQUEST, "missing parameter '%s'" % key)
+
+        client_id = get_param('client_id')
+        client_secret = get_param('client_secret')
+
+        application = await app.pg.get_or_none(Application, client_id=client_id)
+
+        if application is None:
+            raise UnsuccessfulTokenRequest(
+                TokenRequestError.INVALID_CLIENT,
+                "did not find application with client_id: %s." % client_id
+            )
+        if not await verify_password(client_secret, application.client_secret):
+            raise UnsuccessfulTokenRequest(
+                TokenRequestError.INVALID_CLIENT,
+                'client_id and client_secret do not match.'
+            )
+
         async def _password_auth():
-            username = request.form.get('username')
-            password = request.form.get('password')
+            username = get_param('username')
+            password = get_param('password')
             logger.info('PASSWORD grant for %s.' % username)
-            user = await app.pg.get(User, username=username)
-            pwd_verified = await verify_password(password, user.password)
-            return pwd_verified, user
+            user_ = await app.pg.get(User, username=username)
+            pwd_verified = await verify_password(password, user_.password)
+            if not pwd_verified:
+                raise UnsuccessfulTokenRequest(TokenRequestError.INVALID_GRANT, "username and password don't match")
+            return pwd_verified, True, 1800, user_
 
         async def _refresh_token_auth():
-            token_str = request.form.get('refresh_token')
+            token_str = get_param('refresh_token')
             found_token = await app.pg.get_or_none(RefreshToken, token=token_str)
             if found_token is None:
-                raise Unauthorized("invalid refresh token")
+                raise UnsuccessfulTokenRequest(TokenRequestError.INVALID_GRANT, "invalid refresh token")
             if found_token.status != RefreshToken.Status.Active:
-                raise Unauthorized('token is %s' % found_token.status)
+                raise UnsuccessfulTokenRequest(TokenRequestError.INVALID_GRANT, 'token is %s' % found_token.status)
 
-            user = await app.pg.get(User, id=found_token.user_id)
-            return True, user
+            user_ = await app.pg.get(User, id=found_token.user_id)
+            return True, True, 1800, user_
+
+        async def _client_credentials():
+            return True, False, 86400, None
 
         job_chooser = {
             'password': _password_auth,
-            'refresh_token': _refresh_token_auth
+            'refresh_token': _refresh_token_auth,
+            'client_credentials': _client_credentials
         }
 
-        if 'grant_type' in request.form:
-            grant_type = request.form.get('grant_type')
-            auth_success, user = await job_chooser[grant_type]()
-            if auth_success:
-                access_token = nonce_gen(64)
-                refresh_token = nonce_gen(128)
-                now = datetime.now()
-                token_lifespan = 1800
+        grant_type = get_param('grant_type')
+        auth_success,\
+            issue_refresh_token, \
+            token_lifespan, \
+            user = await job_chooser[grant_type]()
 
-                with await app.redis as r:
-                    while await r.get(access_token) is not None:
-                        access_token = nonce_gen()
-                    await r.setex(
-                        access_token,
-                        token_lifespan,
-                        dumps(dict(
-                            username=user.username,
-                            exp=int(now.strftime('%s')) + token_lifespan
-                        )))
+        if auth_success:
+            access_token = nonce_gen(64)
+            now = datetime.now()
+
+            with await app.redis as r:
+                while await r.get(access_token) is not None:
+                    access_token = nonce_gen(64)
+                await r.setex(
+                    access_token,
+                    token_lifespan,
+                    dumps(dict(
+                        username=user.username if isinstance(user, User) else '',
+                        exp=int(now.strftime('%s')) + token_lifespan
+                    )))
+
+            if issue_refresh_token:
+                refresh_token = nonce_gen(128)
 
                 rt = await app.pg.get_or_none(
                     RefreshToken,
@@ -76,24 +137,26 @@ def setup_token_handlers(app: Sanic):
                     rt.status = RefreshToken.Status.Active
                     await app.pg.update(rt)
 
-                return json(
-                    dict(
-                        access_token=access_token,
-                        token_type='Bearer',
-                        expires_in=token_lifespan,
-                        refresh_token=refresh_token
-                    ),
-                    headers={
-                        'Cache-Control': 'no-store',
-                        'Pragma': 'no-cache'
-                    })
+            resp_json = dict(
+                access_token=access_token,
+                token_type='Bearer',
+                expires_in=token_lifespan
+            )
 
-        raise Unauthorized("username and password don't match")
+            if issue_refresh_token:
+                resp_json.update(refresh_token=refresh_token)
+
+            return json(
+                resp_json,
+                headers={
+                    'Cache-Control': 'no-store',
+                    'Pragma': 'no-cache'
+                })
 
     @app.route('/token_info', methods=['POST'])
     async def introspection_handler(req: Request):
         if 'token' not in req.form:
-            abort(400, 'missing parameter "token"')
+            raise InvalidUsage('missing parameter "token"')
         with await app.redis as r:
             token_info = await r.get(req.form.get('token'))
 

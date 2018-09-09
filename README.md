@@ -25,7 +25,7 @@
  
 * handlers for grant types
     * password ✔️
-    * client credentials
+    * client credentials ✔️
     * authorization code
     * implicit
     * refresh token ✔️
