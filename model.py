@@ -48,7 +48,7 @@ async def _get_or_none(self, model, *args, **kwargs):
 
 
 def setup_pg(app, database, **settings):
-    pg_db = peewee_async.PostgresqlDatabase(database, **settings)
+    pg_db = peewee_async.PooledPostgresqlDatabase(database, **settings)
     BaseModel.set_database(pg_db)
     pg_db.set_allow_sync(False)
     app.pg = peewee_async.Manager(pg_db)

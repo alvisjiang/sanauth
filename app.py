@@ -5,31 +5,42 @@ import token_handlers
 import user_handlers
 import application_handlers
 
-app = Sanic('oauth')
 
-app.pg = setup_pg(
-    app,
-    'app',
-    user='app-user',
-    password='password',
-    host='127.0.0.1',
-    port=5432
-)
+def sanic_oauth(sanic_app=None, pg_db='app', pg_cfg=dict(), r_cfg=dict()):
+    if sanic_app is None:
+        sanic_app = Sanic('sanic_oauth')
 
-app.config.update({
-    'REDIS': {
+    sanic_app.pg = setup_pg(
+        sanic_app,
+        pg_db,
+        **pg_cfg
+    )
+
+    SanicRedis().init_app(sanic_app, redis_config=r_cfg)
+
+    token_handlers.setup_token_handlers(sanic_app)
+    user_handlers.setup_user_handler(sanic_app)
+    application_handlers.setup(sanic_app)
+
+    return sanic_app
+
+
+if __name__ == "__main__":
+    pg_settings = dict(
+        user='app-user',
+        password='password',
+        host='127.0.0.1',
+        port=5432
+    )
+    redis_config = {
         'address': ('127.0.0.1', 6379),
         'minsize': 1,
         'maxsize': 10
     }
-})
-
-
-SanicRedis(app)
-
-token_handlers.setup_token_handlers(app)
-user_handlers.setup_user_handler(app)
-application_handlers.setup(app)
-
-if __name__ == "__main__":
+    app = Sanic('oauth')
+    sanic_oauth(
+        app,
+        pg_cfg=pg_settings,
+        r_cfg=redis_config
+    )
     app.run(host="0.0.0.0", port=8000, debug=True)
