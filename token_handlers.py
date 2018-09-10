@@ -48,8 +48,8 @@ def get_param(request, key):
 
 
 async def password_auth(request):
-    username = get_param('username')
-    password = get_param('password')
+    username = get_param(request, 'username')
+    password = get_param(request, 'password')
     logger.info('PASSWORD grant for %s.' % username)
     user_ = await request.app.pg.get(User, username=username)
     pwd_verified = await verify_password(password, user_.password)
@@ -59,7 +59,7 @@ async def password_auth(request):
 
 
 async def refresh_token_auth(request):
-    token_str = get_param('refresh_token')
+    token_str = get_param(request, 'refresh_token')
     found_token = await request.app.pg.get_or_none(RefreshToken, token=token_str)
     if found_token is None:
         raise UnsuccessfulTokenRequest(TokenRequestError.INVALID_GRANT, "invalid refresh token")
@@ -83,8 +83,8 @@ auth_chooser = {
 
 async def grant_token(request: Request):
 
-    client_id = get_param('client_id')
-    client_secret = get_param('client_secret')
+    client_id = get_param(request, 'client_id')
+    client_secret = get_param(request, 'client_secret')
     application = await request.app.pg.get_or_none(Application, client_id=client_id)
 
     if application is None:
@@ -99,7 +99,7 @@ async def grant_token(request: Request):
             'client_id and client_secret do not match.'
         )
 
-    grant_type = get_param('grant_type')
+    grant_type = get_param(request, 'grant_type')
     auth_success, issue_refresh_token, token_lifespan, user = await auth_chooser[grant_type](request)
 
     if auth_success:
