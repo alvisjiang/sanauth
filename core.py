@@ -1,9 +1,7 @@
 from sanic import Sanic
 from sanic_redis import SanicRedis
-from model import setup_pg
-import token_handlers
-import user_handlers
-import application_handlers
+from entities import setup_pg
+from handlers import user_handlers, token_handlers, application_handlers
 
 
 def sanic_oauth(sanic_app=None, pg_db='app', pg_cfg=dict(), r_cfg=dict()):
@@ -18,8 +16,8 @@ def sanic_oauth(sanic_app=None, pg_db='app', pg_cfg=dict(), r_cfg=dict()):
 
     SanicRedis().init_app(sanic_app, redis_config=r_cfg)
 
-    token_handlers.setup_token_handlers(sanic_app)
-    user_handlers.setup_user_handler(sanic_app)
+    token_handlers.setup(sanic_app)
+    user_handlers.setup(sanic_app)
     application_handlers.setup(sanic_app)
 
     return sanic_app

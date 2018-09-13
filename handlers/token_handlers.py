@@ -5,7 +5,7 @@ from sanic.request import Request
 from sanic.response import json
 from sanic.log import logger
 from sanic.exceptions import SanicException, InvalidUsage
-from model import User, RefreshToken, Application
+from entities import User, RefreshToken, Application
 from time import time
 from datetime import datetime
 from security import *
@@ -40,7 +40,7 @@ class UnsuccessfulTokenRequest(SanicException):
         }
 
 
-def get_param(request, key):
+def _get_form_param(request, key):
     try:
         return request.form[key][0]
     except KeyError:
@@ -48,8 +48,8 @@ def get_param(request, key):
 
 
 async def password_auth(request):
-    username = get_param(request, 'username')
-    password = get_param(request, 'password')
+    username = _get_form_param(request, 'username')
+    password = _get_form_param(request, 'password')
     logger.info('PASSWORD grant for %s.' % username)
     user_ = await request.app.pg.get(User, username=username)
     pwd_verified = await verify_password(password, user_.password)
@@ -59,7 +59,7 @@ async def password_auth(request):
 
 
 async def refresh_token_auth(request):
-    token_str = get_param(request, 'refresh_token')
+    token_str = _get_form_param(request, 'refresh_token')
     found_token = await request.app.pg.get_or_none(RefreshToken, token=token_str)
     if found_token is None:
         raise UnsuccessfulTokenRequest(TokenRequestError.INVALID_GRANT, "invalid refresh token")
@@ -83,8 +83,8 @@ auth_chooser = {
 
 async def grant_token(request: Request):
 
-    client_id = get_param(request, 'client_id')
-    client_secret = get_param(request, 'client_secret')
+    client_id = _get_form_param(request, 'client_id')
+    client_secret = _get_form_param(request, 'client_secret')
     application = await request.app.pg.get_or_none(Application, client_id=client_id)
 
     if application is None:
@@ -99,7 +99,7 @@ async def grant_token(request: Request):
             'client_id and client_secret do not match.'
         )
 
-    grant_type = get_param(request, 'grant_type')
+    grant_type = _get_form_param(request, 'grant_type')
     auth_success, issue_refresh_token, token_lifespan, user = await auth_chooser[grant_type](request)
 
     if auth_success:
@@ -171,6 +171,6 @@ async def introspect_token(req: Request):
         return json(token_info)
 
 
-def setup_token_handlers(app: Sanic):
+def setup(app: Sanic):
     app.add_route(grant_token, "/oauth/token", methods=['POST'])
     app.add_route(introspect_token, '/token_info', methods=['POST'])

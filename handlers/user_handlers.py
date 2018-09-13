@@ -1,22 +1,17 @@
 from sanic import Sanic
 from sanic.request import Request
-from sanic.response import text
+from sanic.response import text, json
 from sanic.exceptions import InvalidUsage, NotFound, Unauthorized
-from security import hash_password, verify_password
-from model import User
+from security import hash_password
+from entities import User
+from util import get_form_param
 
 
 async def add_user(request: Request):
 
-    username = request.form.get('username')
-    password = request.form.get('password')
-    confirm = request.form.get('confirm')
-
-    if username is None:
-        raise InvalidUsage('missing argument "username".')
-
-    if password is None:
-        raise InvalidUsage('missing argument "password".')
+    username = get_form_param(request, 'username')
+    password = get_form_param(request, 'password')
+    confirm = get_form_param(request, 'confirm')
 
     if password != confirm:
         raise InvalidUsage("passwords don't match.")
@@ -47,31 +42,35 @@ async def add_user(request: Request):
 
 
 async def update_password(req: Request, user_id):
-    new_pwd = req.form.get('new_password')
-    if new_pwd is None:
-        raise InvalidUsage('missing argument "new_password".')
+    new_pwd = get_form_param(req, 'new_password')
+    old_pwd = get_form_param(req, 'old_password')
+    confirm = get_form_param(req, 'confirm')
 
-    confirm = req.form.get('confirm')
     if new_pwd != confirm:
         raise InvalidUsage("new_password and confirm don't match.")
 
-    old_pwd = req.form.get('old_password')
-    if old_pwd is None:
-        raise InvalidUsage('missing argument "old_password".')
-
-    user = await req.app.pg.get_or_none(User, id=user_id)
-    if user is None:
+    try:
+        user = User.authenticate(old_pwd, uid=user_id)
+    except User.DoesNotExist:
         raise NotFound
 
-    if not await verify_password(old_pwd, user.password):
+    if user is None:
         raise Unauthorized
 
-    user.password = await  hash_password(new_pwd)
+    user.password = await hash_password(new_pwd)
     await req.app.pg.update(user)
 
     return text('password updated')
 
 
-def setup_user_handler(app: Sanic):
+async def get_users(_req):
+    users = await User.list(excl=['password'])
+    for user in users:
+        user['id'] = str(user['id'])
+    return json(users)
+
+
+def setup(app: Sanic):
+    app.add_route(get_users, '/user')
     app.add_route(add_user, '/user', ['POST'])
     app.add_route(update_password, '/user/<user_id:path>', ['PUT'])

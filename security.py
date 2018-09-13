@@ -1,8 +1,8 @@
 import secrets
-from threaded_execution import make_async
+from util import make_async
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"])
+_pwd_context = CryptContext(schemes=["bcrypt"])
 
 
 def nonce_gen(length=64):
@@ -22,9 +22,9 @@ def hash_password(pwd):
     :param pwd:
     :return:
     """
-    return pwd_context.hash(pwd)
+    return _pwd_context.hash(pwd)
 
 
 @make_async
 def verify_password(pwd, hashed_pwd):
-    return pwd_context.verify(pwd, hashed_pwd)
+    return _pwd_context.verify(pwd, hashed_pwd)

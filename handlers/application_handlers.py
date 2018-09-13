@@ -3,12 +3,13 @@ from sanic.exceptions import NotFound
 from sanic.request import Request
 import sanic.response as resp
 from security import nonce_gen, hash_password
-from model import Application
+from entities import Application
+from util import get_form_param
 from playhouse.shortcuts import model_to_dict
 
 
 async def create_app(req: Request):
-    new_client = {'app_name': req.form.get('app_name')}
+    new_client = {'app_name': get_form_param(req, 'app_name')}
     client_secret = nonce_gen(32)
     hashed_client_secret = await hash_password(client_secret)
     new_client.update(
@@ -26,8 +27,9 @@ async def get_apps(req):
     apps = await req.app.pg.execute(Application.select())
     app_list = []
     for app_ in apps:
-        app_.client_id = str(app_.client_id)
-        app_list.append(model_to_dict(app_))
+        app_dict = model_to_dict(app_)
+        app_dict['client_id'] = str(app_dict['client_id'])
+        app_list.append(app_dict)
     return resp.json(app_list)
 
 
