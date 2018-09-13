@@ -68,5 +68,5 @@ def setup(app: Sanic):
     app.add_route(create_app, '/app', ['POST'])
     app.add_route(get_apps, '/app')
     app.add_route(get_app, '/app/<client_id:path>')
-    add.add_route(delete_application, '/app/<client_id:path>', ['DELETE'])
+    app.add_route(delete_application, '/app/<client_id:path>', ['DELETE'])
     app.add_route(get_new_client_secret, '/app/<client_id:path>/new_secret', ['POST'])
