@@ -6,12 +6,16 @@
 ## Tasks
 > job break down for the server. they are not listed in order.
 
-### application registration
-* API ✔️
+### application related API's
+* create ✔
+* get ✔
+* delete ✔
+* reset client_secret ✔
+
 
 ### user registration API's
-
->TBD
+* create ✔
+* update password ✔
 
 
 ### access token
