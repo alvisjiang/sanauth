@@ -1,4 +1,4 @@
-# sanic-oauth2
+# sanauth
 > An oauth2 server implementation with [sanic](https://github.com/channelcat/sanic).
 > The development sees <https://www.oauth.com/> as a guideline to ensure that all the API's stick to the protocol.
 
