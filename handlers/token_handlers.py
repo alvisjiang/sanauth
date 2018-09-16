@@ -106,16 +106,15 @@ async def grant_token(request: Request):
         access_token = nonce_gen(64)
         now = datetime.now()
 
-        with await request.app.redis as r:
-            while await r.get(access_token) is not None:
-                access_token = nonce_gen(64)
-            await r.setex(
-                access_token,
-                token_lifespan,
-                dumps(dict(
-                    username=user.username if isinstance(user, User) else '',
-                    exp=int(now.strftime('%s')) + token_lifespan
-                )))
+        while await request.app.redis.get(access_token) is not None:
+            access_token = nonce_gen(64)
+        await request.app.redis.setex(
+            access_token,
+            token_lifespan,
+            dumps(dict(
+                username=user.username if isinstance(user, User) else '',
+                exp=int(now.strftime('%s')) + token_lifespan
+            )))
 
         if issue_refresh_token:
             refresh_token = nonce_gen(128)
@@ -156,19 +155,19 @@ async def grant_token(request: Request):
 async def introspect_token(req: Request):
     if 'token' not in req.form:
         raise InvalidUsage('missing parameter "token"')
-    with await req.app.redis as r:
-        token_info = await r.get(req.form.get('token'))
 
-        if token_info is None:
-            return json({'active': False})
+    token_info = await req.app.redis.get(req.form.get('token'))
 
-        token_info = loads(token_info)
-        now = time()
-        if int(token_info['exp']) < now:
-            return json({'active': False})
+    if token_info is None:
+        return json({'active': False})
 
-        token_info.update(active=True)
-        return json(token_info)
+    token_info = loads(token_info)
+    now = time()
+    if int(token_info['exp']) < now:
+        return json({'active': False})
+
+    token_info.update(active=True)
+    return json(token_info)
 
 
 def setup(app: Sanic):

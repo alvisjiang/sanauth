@@ -1,10 +1,23 @@
 from sanic import Sanic
-from sanic_redis import SanicRedis
 from entities import setup_pg
 from handlers import user_handlers, token_handlers, application_handlers
+from aioredis import create_redis_pool
 
 
-def sanic_oauth(sanic_app=None, pg_db='app', pg_cfg=dict(), r_cfg=dict()):
+def _setup_redis(sanic_app, config):
+
+    async def aio_redis_configure(_app, _loop):
+        _app.redis = await create_redis_pool(**config)
+
+    async def close_redis(_app, _loop):
+        _app.redis.close()
+        await _app.redis.wait_closed()
+
+    sanic_app.listeners['before_server_start'].append(aio_redis_configure)
+    sanic_app.listeners['after_server_stop'].append(close_redis)
+
+
+def sanauth(sanic_app=None, pg_db='app', pg_cfg=dict(), r_cfg=dict()):
     if sanic_app is None:
         sanic_app = Sanic('sanic_oauth')
 
@@ -14,8 +27,7 @@ def sanic_oauth(sanic_app=None, pg_db='app', pg_cfg=dict(), r_cfg=dict()):
         **pg_cfg
     )
 
-    SanicRedis().init_app(sanic_app, redis_config=r_cfg)
-
+    _setup_redis(sanic_app, r_cfg)
     token_handlers.setup(sanic_app)
     user_handlers.setup(sanic_app)
     application_handlers.setup(sanic_app)
@@ -36,7 +48,7 @@ if __name__ == "__main__":
         'maxsize': 10
     }
     app = Sanic('oauth')
-    sanic_oauth(
+    sanauth(
         app,
         pg_cfg=pg_settings,
         r_cfg=redis_config
