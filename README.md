@@ -14,42 +14,42 @@ So I want to list some ultimate goals here and make sure the project will end th
         * including disabling and re-enabling an user account
         * via both *web API* and *function calling* 
     * access token granting and invalidating
-* usability
-    * developer shall be able to use the program as a drop in extension for their own sanic project.
+* availability
+    * developers shall be able to use the program as a drop in extension for their own sanic project.
     * the program shall also be able to run as a standalone service app.
-    * publish on pypi
+    * developers shall be able to install this program via pypi
 
 
 ## Tasks
 > job break down for the server. they are not listed in order.
 
 ### application related API's
-* create ✔
-* get ✔
-* delete ✔
-* reset client_secret ✔
+* [x] create
+* [x] get
+* [x] delete
+* [x] reset client_secret
 
 
 ### user registration API's
-* create ✔
-* update password ✔
+* [x] create
+* [x] update password
 
 
 ### access token
 
 >I will be doing introspection for token verification.
 
-* access token generation ✔️
+* [x] access token generation
 
     *a very long nonce string shall be sufficient.*
  
  
-* handlers for grant types
-    * password ✔️
-    * client credentials ✔️
-    * authorization code
-    * implicit
-    * refresh token ✔️
+* [ ] handlers for grant types
+    * [x] password
+    * [x] client credentials
+    * [ ] authorization code
+    * [ ] ~~implicit~~ *dropped*
+    * [x] refresh token
     
  
-* token introspection ✔️
+* [x] token introspection
