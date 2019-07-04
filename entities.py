@@ -64,7 +64,7 @@ class RefreshToken(_BaseModel):
 
     user_id = peewee.UUIDField(primary_key=True)
     token = peewee.CharField(128, unique=True)
-    time_created = peewee.DateTimeField(default=datetime.utcnow())
+    time_created = peewee.DateTimeField(default=datetime.utcnow)
     status = peewee.CharField(default=Status.Active)
 
 
