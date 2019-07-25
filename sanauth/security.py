@@ -1,5 +1,5 @@
 import secrets
-from util import make_async
+from sanauth.util import make_async
 from passlib.context import CryptContext
 
 _pwd_context = CryptContext(schemes=["bcrypt"])

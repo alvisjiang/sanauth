@@ -3,7 +3,7 @@ import peewee_async
 import uuid
 import types
 from datetime import datetime
-from security import verify_password
+from sanauth.security import verify_password
 from playhouse.shortcuts import model_to_dict
 
 

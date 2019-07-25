@@ -2,9 +2,9 @@ from sanic import Sanic
 from sanic.request import Request
 from sanic.response import text, json
 from sanic.exceptions import InvalidUsage, NotFound, Unauthorized
-from security import hash_password
-from entities import User
-from util import get_form_param
+from sanauth.security import hash_password
+from sanauth.entities import User
+from sanauth.util import get_form_param
 
 
 async def add_user(request: Request):

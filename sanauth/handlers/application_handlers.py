@@ -2,9 +2,9 @@ from sanic import Sanic
 from sanic.exceptions import NotFound
 from sanic.request import Request
 import sanic.response as resp
-from security import nonce_gen, hash_password
-from entities import Application
-from util import get_form_param
+from sanauth.security import nonce_gen, hash_password
+from sanauth.entities import Application
+from sanauth.util import get_form_param
 from playhouse.shortcuts import model_to_dict
 
 

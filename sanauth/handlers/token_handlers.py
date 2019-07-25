@@ -5,10 +5,10 @@ from sanic.request import Request
 from sanic.response import json
 from sanic.log import logger
 from sanic.exceptions import SanicException, InvalidUsage
-from entities import User, RefreshToken, Application
+from sanauth.entities import User, RefreshToken, Application
 from time import time
 from datetime import datetime
-from security import *
+from sanauth.security import *
 
 
 class TokenRequestError:

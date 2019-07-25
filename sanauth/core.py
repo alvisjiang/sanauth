@@ -1,6 +1,6 @@
 from sanic import Sanic
-from entities import setup_pg
-from handlers import user_handlers, token_handlers, application_handlers
+from sanauth.entities import setup_pg
+from sanauth.handlers import application_handlers, user_handlers, token_handlers
 from aioredis import create_redis_pool
 
 
