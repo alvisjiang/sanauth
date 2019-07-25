@@ -55,3 +55,5 @@
 
 * add a layer for DB accessing. it'll allow developer to use which ever database they like.
     * default redis and postgres will be extracted to separate pypi package as extension.
+* add more token generation solutions.
+    * could also add a token generation/validation layer.
