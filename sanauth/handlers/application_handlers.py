@@ -1,10 +1,11 @@
+import psycopg2
 from sanic import Sanic
-from sanic.exceptions import NotFound
+from sanic.exceptions import NotFound, InvalidUsage
 from sanic.request import Request
 import sanic.response as resp
-from sanauth.security import nonce_gen, hash_password
+from sanauth.security import hash_password
 from sanauth.entities import Application
-from sanauth.util import get_form_param
+from sanauth.util import get_form_param, nonce_gen
 from playhouse.shortcuts import model_to_dict
 
 
@@ -36,9 +37,13 @@ async def get_apps(req):
 
 
 async def get_app(req, client_id):
-    client = await req.app.pg.get_or_none(Application, client_id=client_id)
+    try:
+        client = await req.app.pg.get_or_none(Application, client_id=client_id)
+    except psycopg2.errors.InvalidTextRepresentation:
+        raise InvalidUsage('invalid form of client_id: %s' % client_id)
+
     if client is None:
-        raise NotFound
+        raise NotFound("didn't find application with client_id: %s" % client_id)
 
     return resp.json(dict(
         client_id=str(client.client_id),

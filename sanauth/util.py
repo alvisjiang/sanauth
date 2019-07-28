@@ -2,6 +2,7 @@ from sanic.exceptions import InvalidUsage
 from sanic.request import Request
 import asyncio
 import functools
+import secrets
 
 
 def make_async(func):
@@ -35,3 +36,13 @@ def get_query_arg(req: Request, key, default=None):
         if default is not None:
             return default
         raise InvalidUsage("missing argument '%s'." % key)
+
+
+def nonce_gen(length=64):
+    chars = '1234567890' \
+            'qwertyuiopasdfghjklzxcvbnm' \
+            'QWERTYUIOPASDFGHJKLZXCVBNM'
+    nonce = ''
+    for _ in range(length):
+        nonce += secrets.choice(chars)
+    return nonce
