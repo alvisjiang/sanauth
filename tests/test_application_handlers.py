@@ -35,7 +35,6 @@ def make_test_app():
     redis_config = {
         'address': ('127.0.0.1', 6379),
         'minsize': 1,
-        'minsize': 1,
         'maxsize': 10
     }
 
