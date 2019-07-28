@@ -19,7 +19,7 @@ def _setup_redis(sanic_app, config):
 
 def sanauth(sanic_app=None, pg_db='app', pg_cfg=dict(), r_cfg=dict()):
     if sanic_app is None:
-        sanic_app = Sanic('sanic_oauth')
+        sanic_app = Sanic('sanauth')
 
     sanic_app.pg = setup_pg(
         sanic_app,
@@ -47,9 +47,8 @@ if __name__ == "__main__":
         'minsize': 1,
         'maxsize': 10
     }
-    app = Sanic('oauth')
-    sanauth(
-        app,
+
+    app = sanauth(
         pg_cfg=pg_settings,
         r_cfg=redis_config
     )

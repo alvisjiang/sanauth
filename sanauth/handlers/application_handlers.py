@@ -16,10 +16,12 @@ async def create_app(req: Request):
         client_secret=hashed_client_secret
     )
     created_app = await req.app.pg.create(Application, **new_client)
+    app_dict = model_to_dict(created_app)
+    app_dict['client_id'] = str(app_dict['client_id'])
     return resp.json(
-        model_to_dict(create_app),
+        app_dict,
         status=201,
-        headers={'location': '/app/%s' % str(created_app.client_id)}
+        headers={'location': '/app/%s' % created_app.client_id}
     )
 
 
