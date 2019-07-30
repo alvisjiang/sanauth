@@ -25,7 +25,7 @@ def _arg_injector(arg_type, arg_name, default):
     return decorator
 
 
-def make_test_app():
+def _make_test_app():
     pg_settings = dict(
         user='app-user',
         password='password',
@@ -45,7 +45,7 @@ def make_test_app():
     return sanauth_app
 
 
-@_arg_injector(Sanic, 'sanauth_app', make_test_app)
+@_arg_injector(Sanic, 'sanauth_app', _make_test_app)
 def test_create_application(app_name, sanauth_app=None):
     logger.info('testing application creation for app named: %s', app_name)
     params = {
@@ -60,42 +60,67 @@ def test_create_application(app_name, sanauth_app=None):
     assert resp_data['app_name'] == app_name
     assert resp_data['client_id']
     assert resp_data['client_secret']
+    assert resp_data['client_id'] in resp.headers['location']
     logger.info('all asserts passed for application creation for app named: %s', app_name)
     return resp_data
 
 
-@_arg_injector(Sanic, 'sanauth_app', make_test_app)
-def test_get_application_400(sanauth_app=None):
-    logger.info('testing application query for made up app')
-    req, resp = sanauth_app.test_client.get('/app/non-existing-app-client')
-    assert resp.status == 400
-
-
-@_arg_injector(Sanic, 'sanauth_app', make_test_app)
-def test_get_application_404(sanauth_app=None):
-    req, resp = sanauth_app.test_client.get('/app/%s' % uuid4())
-    assert resp.status == 404
-
-
-@_arg_injector(Sanic, 'sanauth_app', make_test_app)
-def test_get_application_200(app_name, client_id, sanauth_app=None):
-    logger.info('testing application query for app: %s', app_name)
-    req, resp = sanauth_app.test_client.get(
-        '/app/%s' % client_id
-    )
-    assert resp.status == 200
-    logger.info('all asserts passed for application query for app named: %s', app_name)
-
-
 def test_get_application(app_name, client_id):
+
+    @_arg_injector(Sanic, 'sanauth_app', _make_test_app)
+    def test_get_application_400(sanauth_app=None):
+        logger.info('testing application query for made up app')
+        req, resp = sanauth_app.test_client.get('/app/non-existing-app-client')
+        assert resp.status == 400
+
+    @_arg_injector(Sanic, 'sanauth_app', _make_test_app)
+    def test_get_application_404(sanauth_app=None):
+        req, resp = sanauth_app.test_client.get('/app/%s' % uuid4())
+        assert resp.status == 404
+
+    @_arg_injector(Sanic, 'sanauth_app', _make_test_app)
+    def test_get_application_200(sanauth_app=None):
+        logger.info('testing application query for app: %s', app_name)
+        req, resp = sanauth_app.test_client.get(
+            '/app/%s' % client_id
+        )
+        assert resp.status == 200
+        logger.info('all asserts passed for application query for app named: %s', app_name)
+
     test_get_application_400()
     test_get_application_404()
-    test_get_application_200(app_name, client_id)
+    test_get_application_200()
+
+
+def test_delete_application(client_id):
+
+    @_arg_injector(Sanic, 'sanauth_app', _make_test_app)
+    def test_delete_application_200(sanauth_app=None):
+        logger.info('testing application deletion for app: %s', client_id)
+        req, resp = sanauth_app.test_client.delete('/app/%s' % client_id)
+        assert resp.status == 200
+        assert resp.json['client_id'] == client_id
+        logger.info('all asserts passed for application deletion for app: %s', client_id)
+
+    @_arg_injector(Sanic, 'sanauth_app', _make_test_app)
+    def test_delete_application_400(sanauth_app=None):
+        req, resp = sanauth_app.test_client.delete('/app/non-existing-app-client')
+        assert resp.status == 400
+
+    @_arg_injector(Sanic, 'sanauth_app', _make_test_app)
+    def test_delete_application_404(sanauth_app=None):
+        req, resp = sanauth_app.test_client.delete('/app/%s' % uuid4())
+        assert resp.status == 404
+
+    test_delete_application_200()
+    test_delete_application_400()
+    test_delete_application_404()
 
 
 def test_all(app_name=util.nonce_gen(32)):
     app_data = test_create_application(app_name)
     test_get_application(app_name, app_data['client_id'])
+    test_delete_application(app_data['client_id'])
 
 
 if __name__ == '__main__':
