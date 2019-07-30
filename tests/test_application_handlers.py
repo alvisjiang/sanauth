@@ -1,9 +1,12 @@
+import sys
 from sanauth.core import sanauth
 from sanauth import util
 from functools import wraps
 from sanic import Sanic
 from uuid import uuid4
 from sanic.log import logger
+
+sys.path.insert(0, '')
 
 
 def _arg_injector(arg_type, arg_name, default):
