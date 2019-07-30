@@ -16,6 +16,7 @@ jobs:
         environment:
             POSTGRES_USER: app-user
             POSTGRES_PASSWORD: password
+            POSTGRES_DB: app
 
       - image: circleci/redis:5.0.5
     working_directory: ~/sanauth_test
