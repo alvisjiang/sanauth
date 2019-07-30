@@ -7,7 +7,6 @@ autopep8==1.4
 certifi==2018.4.16
 cffi==1.11.5
 chardet==3.0.4
-conda==4.5.4
 cryptography==2.2.2
 hiredis==0.2.0
 httptools==0.0.11
