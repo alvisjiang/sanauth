@@ -52,9 +52,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            mv sanauth tests/
-            python tests/test_application_handlers.py
+            pytest --junitxml=result.xml
 
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
+      - store_test_results:
+          path: result.xml
