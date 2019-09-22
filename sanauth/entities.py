@@ -24,7 +24,7 @@ class _BaseModel(peewee.Model):
 
 
 class User(_BaseModel):
-    id = peewee.UUIDField(default=uuid.uuid4(), unique=True, primary_key=True)
+    id = peewee.UUIDField(default=uuid.uuid4, unique=True, primary_key=True)
     username = peewee.CharField(unique=True)
     password = peewee.CharField()
 
@@ -70,7 +70,7 @@ class RefreshToken(_BaseModel):
 
 class Application(_BaseModel):
 
-    client_id = peewee.UUIDField(default=uuid.uuid4(), primary_key=True)
+    client_id = peewee.UUIDField(default=uuid.uuid4, primary_key=True)
     client_secret = peewee.CharField()
     app_name = peewee.CharField()
 
