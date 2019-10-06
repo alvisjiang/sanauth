@@ -2,19 +2,28 @@ import sys
 from sanauth.core import sanauth
 from uuid import uuid4
 import pytest
+from pytest_postgresql import factories as psql_factories
+from pytest_redis import factories as redis_factories
 
-sys.path.insert(0, '')
+
+postgresql_my_proc = psql_factories.postgresql_proc()
+postgresql_my = psql_factories.postgresql('postgresql_my_proc')
+redis_my_proc = redis_factories.redis_proc()
+redis_my = redis_factories.redisdb('redis_my_proc')
 
 
-def _test_app():
+@pytest.fixture
+def app_fixture(postgresql_my_proc, postgresql_my, redis_my_proc, redis_my):
+
     pg_settings = dict(
-        user='app-user',
-        password='password',
+        user='postgres',
+        password='',
         host='127.0.0.1',
-        port=5432
+        port=5433,
     )
+
     redis_config = {
-        'address': ('127.0.0.1', 6379),
+        'address': ('127.0.0.1', 6380),
         'minsize': 1,
         'maxsize': 10
     }
@@ -26,8 +35,9 @@ def _test_app():
     return sanauth_app
 
 
-def _client_and_app():
-    test_client = _test_app().test_client
+@pytest.fixture
+def client_and_app(app_fixture):
+    test_client = test_app.test_client
     params = {
         'app_name': 'created_app'
     }
@@ -36,19 +46,22 @@ def _client_and_app():
 
 
 @pytest.fixture
-def client():
-    return _test_app().test_client
+def client(app_fixture):
+    return app_fixture.test_client
 
 
 @pytest.fixture
-def client_id():
-    client, created_app = _client_and_app()
-    return created_app['client_id']
+def client_id(client_and_app):
+    return client_and_app[1]['client_id']
 
 
 class TestApplicationHandlers(object):
 
-    def test_create_application(self, client, app_name='test_app'):
+    def test_create_application(
+        self,
+        client,
+        app_name='test_app'
+    ):
         params = {
             'app_name': app_name
         }
