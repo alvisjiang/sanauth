@@ -7,15 +7,19 @@ from sanauth.security import hash_password
 from sanauth.entities import Application
 from sanauth.util import get_form_param, nonce_gen
 from playhouse.shortcuts import model_to_dict
+from uuid import uuid4, UUID
 
 
 async def _get_app(app, client_id) -> Application:
     try:
-        client = await app.pg.get(Application, client_id=client_id)
-    except psycopg2.errors.InvalidTextRepresentation:
+        uuid = UUID(client_id)
+        client = await app.pg.get(Application, client_id=uuid)
+    except ValueError:
         raise InvalidUsage('invalid form of client_id: %s' % client_id)
     except Application.DoesNotExist:
-        raise NotFound("didn't find application with client_id: %s" % client_id)
+        raise NotFound(
+            "didn't find application with client_id: %s" % client_id
+        )
     return client
 
 
