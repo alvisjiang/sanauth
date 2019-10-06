@@ -52,13 +52,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            coverage run -m pytest --junitxml=test_results/application/result.xml
-            coverage report --omit=./venv/lib
-            coverage html --omit=./venv/lib
+            pytest --junitxml=test_results/application/result.xml
 
       - store_test_results:
           path: test_results
-
-      - store_artifacts:
-          path: htmlcov
-          destination:
