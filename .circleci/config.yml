@@ -41,7 +41,7 @@ jobs:
       - run:
           name: copy test configs
           command:
-            mv -f tests/ci/* test/
+            mv -f tests/ci/* tests/
 
       - save_cache:
           paths:
