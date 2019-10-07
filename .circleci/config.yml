@@ -38,6 +38,11 @@ jobs:
             . venv/bin/activate
             pip install -r tests/requirements.txt
 
+      - run:
+          name: copy test configs
+          command:
+            mv -f tests/ci/* test/
+
       - save_cache:
           paths:
             - ./venv
