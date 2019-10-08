@@ -1,6 +1,7 @@
 # sanauth
 
 [![CircleCI](https://circleci.com/gh/alvisjiang/sanauth.svg?style=svg)](https://circleci.com/gh/alvisjiang/sanauth)
+[![codecov](https://codecov.io/gh/alvisjiang/sanauth/branch/master/graph/badge.svg)](https://codecov.io/gh/alvisjiang/sanauth)
 
 > An oauth2 server implementation with [sanic](https://github.com/channelcat/sanic).
 > The development sees <https://www.oauth.com/> as a guideline to ensure that all the API's stick to the protocol.
