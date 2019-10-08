@@ -51,7 +51,6 @@ jobs:
           key: v1-dependencies-{{ checksum "tests/requirements.txt" }}
 
       # run tests!
-      # this example uses Django's built-in test-runner
       # other common Python testing frameworks include pytest and nose
       # https://pytest.org
       # https://nose.readthedocs.io
@@ -59,7 +58,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest --junitxml=test_results/application/result.xml
+            pytest --junitxml=test_results/application/result.xml --cov=src --cov-report=xml --cov-report=html
 
       - store_test_results:
           path: test_results
