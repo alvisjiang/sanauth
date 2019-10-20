@@ -1,13 +1,13 @@
-import peewee
 import peewee_async
 import uuid
 import types
 from datetime import datetime
 from sanauth.security import verify_password
 from playhouse.shortcuts import model_to_dict
+from peewee import UUIDField, CharField, DateTimeField, Model
 
 
-class _BaseModel(peewee.Model):
+class _BaseModel(Model):
     manager: peewee_async.Manager = None
 
     @classmethod
@@ -24,9 +24,9 @@ class _BaseModel(peewee.Model):
 
 
 class User(_BaseModel):
-    id = peewee.UUIDField(default=uuid.uuid4, unique=True, primary_key=True)
-    username = peewee.CharField(unique=True)
-    password = peewee.CharField()
+    id = UUIDField(default=uuid.uuid4, unique=True, primary_key=True)
+    username = CharField(unique=True)
+    password = CharField()
 
     @classmethod
     async def authenticate(cls, password, uname=None, uid=None):
@@ -48,7 +48,7 @@ class User(_BaseModel):
             query.update(id=uid)
         else:
             raise AttributeError('must provide either "uname" or "uid".')
-        user = await _BaseModel.manager.get(User, **query)
+        user = await cls.manager.get(User, **query)
         if await verify_password(password, user.password):
             return user
         else:
@@ -62,17 +62,17 @@ class RefreshToken(_BaseModel):
         Expired = 'expired'
         Revoked = 'revoked'
 
-    user_id = peewee.UUIDField(primary_key=True)
-    token = peewee.CharField(128, unique=True)
-    time_created = peewee.DateTimeField(default=datetime.utcnow)
-    status = peewee.CharField(default=Status.Active)
+    user_id = UUIDField(primary_key=True)
+    token = CharField(128, unique=True)
+    time_created = DateTimeField(default=datetime.utcnow)
+    status = CharField(default=Status.Active)
 
 
 class Application(_BaseModel):
 
-    client_id = peewee.UUIDField(default=uuid.uuid4, primary_key=True)
-    client_secret = peewee.CharField()
-    app_name = peewee.CharField()
+    client_id = UUIDField(default=uuid.uuid4, primary_key=True)
+    client_secret = CharField()
+    app_name = CharField()
 
 
 async def _get_or_none(self, model, *args, **kwargs):
