@@ -42,9 +42,9 @@ jobs:
 
       - run:
           name: Copy Test Configs
-          command:
+          command: |
             mv -f tests/ci/pytest.ini ./
-            mv -f tests/ci/conftest.py ./tests/
+            mv -f tests/ci/conftest.py tests/
 
       - save_cache:
           paths:
