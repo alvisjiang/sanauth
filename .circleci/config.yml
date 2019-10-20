@@ -34,16 +34,16 @@ jobs:
             - v1-dependencies-
 
       - run:
-          name: install dependencies
+          name: Install Dependencies
           command: |
             python3 -m venv venv
             . venv/bin/activate
             pip install -r tests/requirements.txt
 
       - run:
-          name: copy test configs
+          name: Copy Test Configs
           command:
-            mv -f tests/ci/* tests/
+            mv -f tests/ci/* ./
 
       - save_cache:
           paths:
@@ -54,10 +54,10 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest --junitxml=test_results/application/result.xml --cov=src --cov-report=xml --cov-report=html
+            pytest --junitxml=test_results/application/result.xml --cov=sanauth --cov-report=xml --cov-report=html
 
       - store_test_results:
           path: test_results
 
       - codecov/upload:
-          file: test_results/application/result.xml
+          file: htmlcov
