@@ -5,6 +5,9 @@
 version: 2.1
 orbs:
   codecov: codecov/codecov@1.0.5
+
+coverage_report_filepath: test_results/application/result
+
 jobs:
   build:
     docker:
@@ -58,7 +61,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest --junitxml=test_results/application/result.xml --cov=src --cov-report=xml --cov-report=html
+            pytest --junitxml={{ coverage_report_filepath }} --cov=src --cov-report=xml --cov-report=html
 
-      - store_test_results:
-          path: test_results
+      - codecov/upload:
+          file: {{ coverage_report_filepath }}
