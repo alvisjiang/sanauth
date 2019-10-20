@@ -43,7 +43,8 @@ jobs:
       - run:
           name: Copy Test Configs
           command:
-            mv -f tests/ci/* ./
+            mv -f tests/ci/pytest.ini ./
+            mv -f tests/ci/conftest.py ./tests/
 
       - save_cache:
           paths:
@@ -54,10 +55,10 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest --junitxml=test_results/application/result.xml --cov=sanauth --cov-report=xml --cov-report=html
+            pytest --junitxml=test_results/result.xml --cov=sanauth --cov-report=xml --cov-report=html
 
       - store_test_results:
           path: test_results
 
       - codecov/upload:
-          file: htmlcov
+          file: coverage.xml
