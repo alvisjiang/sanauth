@@ -28,7 +28,7 @@ setuptools.setup(
         'peewee==3.11.2',
         'peewee-async==0.6.0a0',
         'psycopg2==2.8.3',
-        'sanic==19.6.3',
+        'sanic==20.12.7',
         'uvloop==0.11.2',
     ],
 )
